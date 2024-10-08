@@ -6,7 +6,7 @@ import tkinter.messagebox as mbox
 
 win = tk.Tk()
 win.title("Simple Math")
-
+win.iconbitmap('pyc.ico')
 tabControl = ttk.Notebook(win)
 # Add the tab to tabControl:
 tab1 = ttk.Frame(tabControl)  # Create a tab
