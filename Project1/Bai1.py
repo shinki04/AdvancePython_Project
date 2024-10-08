@@ -56,7 +56,6 @@ def click_me():
     # Lỗi này là do sai giá trị
     except tk.TclError:
         mbox.showerror("Input Error", "Nhập số vào a và b")
-    # ktra những lỗi khác, này dư thừa nhưng để cho bt
     except:
         mbox.showerror("Something wrong", "Check again")
 
@@ -72,33 +71,6 @@ def convert():
         input_value = float(entry.get())
         from_unit = from_combo.get()
         to_unit = to_combo.get()
-
-    #     # Chuyển đổi từ km
-    #     if from_unit == 'Kilometers (km)':
-    #         if to_unit == 'Centimeters (cm)':
-    #             result = input_value * 100000
-    #         elif to_unit == 'Millimeters (mm)':
-    #             result = input_value * 1000000
-    #         else:
-    #             result = input_value
-
-    #     # Chuyển đổi từ cm
-    #     elif from_unit == 'Centimeters (cm)':
-    #         if to_unit == 'Kilometers (km)':
-    #             result = input_value / 100000
-    #         elif to_unit == 'Millimeters (mm)':
-    #             result = input_value * 10
-    #         else:
-    #             result = input_value
-    #     # Chuyển đổi từ mm
-    #     elif from_unit == 'Millimeters (mm)':
-    #         if to_unit == 'Kilometers (km)':
-    #             result = input_value / 1000000
-    #         elif to_unit == 'Centimeters (cm)':
-    #             result = input_value / 10
-    #         else:
-    #             result = input_value
-        # Hệ số chuyển đổi giữa các đơn vị
         conversion_factors = {
             'Kilometers (km)':
                 {
@@ -122,40 +94,26 @@ def convert():
         # Tính kết quả dựa trên hệ số chuyển đổi
         result = input_value * conversion_factors[from_unit][to_unit]
 
-        # Hiển thị kết quả
-    #     .rstrip('0'): Xóa các số 0 ở cuối.
-    #     .rstrip('.'): Xóa dấu chấm nếu không có phần thập phân nào sau dấu chấm.
-        # result_label.grid(row=5, column=0, columnspan=2, pady=10, sticky="N")
-        # result_label.config(text=f"Result: {format(
-        #     result, '.10f').rstrip('0').rstrip('.')} {to_unit}")
+      
         re.set(format(result, '.10f').rstrip('0').rstrip('.'))
-     # Lỗi này là do sai giá trị
     except tk.TclError:
         mbox.showerror("Input Error", "Nhập số vào a và b")
-    # ktra những lỗi khác, này dư thừa nhưng để cho bt
     except ValueError:
-        # Hiển thị thông báo lỗi nếu người dùng nhập không phải là số
         mbox.showerror("Lỗi nhập liệu", "Nhập số")
     except:
         mbox.showerror("Something wrong", "Check again")
 
 
 
-# Tiêu đề
 title_label = tk.Label(
     tab2, text="Convert Between Kilometers, Centimeters, and Millimeters")
 title_label.grid(row=0, column=0, columnspan=4, padx=10, pady=10)
 
-# Nhập số liệu
 entry_label = tk.Label(tab2, text="From:")
 entry_label.grid(row=1, column=0)
 
 entry = tk.Entry(tab2, width=10)
 entry.grid(row=1, column=1)
-
-# # Chọn đơn vị gốc
-# from_label = tk.Label(tab2, text="From:")
-# from_label.grid(row=1, column=0, padx=10, pady=5)
 
 from_combo = ttk.Combobox(tab2, width=15, state='readonly')
 from_combo['value'] = (
@@ -164,7 +122,6 @@ from_combo['value'] = (
 from_combo.current(0)
 from_combo.grid(row=1, column=2)
 
-# Chọn đơn vị đích
 to_label = tk.Label(tab2, text="To:")
 to_label.grid(row=2, column=0)
 
@@ -177,13 +134,8 @@ to_combo['value'] = ('Kilometers (km)', 'Centimeters (cm)', 'Millimeters (mm)')
 to_combo.current(0)
 to_combo.grid(row=2, column=2, pady=3)
 
-# Nút chuyển đổi
 convert_button = tk.Button(tab2, text="Convert", command=convert)
 convert_button.grid(row=4, column=0, columnspan=3, pady=10)
-
-# # Nhãn hiển thị kết quả
-# result_label = tk.Label(tab2, text="Result: ")
-# result_label.grid(row=5, column=0, columnspan=2, pady=10, sticky="N")
 
 tab3_frame = tk.Frame(tab3, bg='blue')  
 tab3_frame.pack()
