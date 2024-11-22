@@ -1,3 +1,5 @@
-venv/
+.venv/
 Thumbs.db
 *.log
+__pycache__
+.vscode

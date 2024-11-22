@@ -4,14 +4,14 @@ GUI made by HieuTran 20/10/2024
 
 import tkinter as tk
 from tkinter import Menu, ttk, messagebox, filedialog
-import psycopg2
 from psycopg2 import sql
 import pandas as pd
 from PIL import Image, ImageTk
+from database import Database
 
-
-class TableApp():
-    def __init__(self, root):
+class TableApp(Database):
+    def __init__(self, root, db_name, user, password, host, port,table_name):
+        super().__init__(db_name, user, password, host, port,table_name)
         self.root = root
         self.root.iconbitmap('logo.ico')
         self.root.title("Kết nối database")
@@ -27,24 +27,28 @@ class TableApp():
         help_menu.add_command(label="About", command=self.msg_box_info)
         self.root.config(menu=self.menu_bar)
         self.root.title("Quản lý sinh viên")
-        self.db_name = tk.StringVar(value='quanlysinhvien')
-        self.user = tk.StringVar(value='postgres')
-        self.password = tk.StringVar(value='123456')
-        self.host = tk.StringVar(value='localhost')
-        self.port = tk.StringVar(value='5432')
-        self.table_name = tk.StringVar(value='sinhvien')
+        self.db_name = tk.StringVar(value=db_name)
+        self.user = tk.StringVar(value=user)
+        self.password = tk.StringVar(value=password)
+        self.host = tk.StringVar(value=host)
+        self.port = tk.StringVar(value=port)
+        self.table_name = tk.StringVar(value=table_name)
+        
+
+        
+        
         original_image = Image.open("logovlu.png")
         resized_image = original_image.resize((100, 100))
         self.image = ImageTk.PhotoImage(resized_image)
         
-        width = 700
-        height = 700
-        self.root.geometry(f"{height}x{width}")
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
-        x = (screen_width - width) // 2
-        y = (screen_height - height) // 2
-        self.root.geometry(f'{width}x{height}+{x}+{y}')
+        # width = 700
+        # height = 700
+        # self.root.geometry(f"{height}x{width}")
+        # screen_width = self.root.winfo_screenwidth()
+        # screen_height = self.root.winfo_screenheight()
+        # x = (screen_width - width) // 2
+        # y = (screen_height - height) // 2
+        # self.root.geometry(f'{width}x{height}+{x}+{y}')
 
         self.widgets_connect()
 
@@ -103,7 +107,7 @@ class TableApp():
         self.data_table.column("Tên", width=200)
         self.data_table.grid(column=0, row=2)
         self.data_table.bind("<ButtonRelease-1>", self.on_tree_select)
-        self.load_data()
+        self.load_data_tabletree()
 
         # Khung chứa các ô nhập liệu
         form_frame = ttk.LabelFrame(self.root, text="")
@@ -175,18 +179,18 @@ class TableApp():
             self.ho.set(ho)
             self.ten.set(ten)
 
-    def insert_data_button(self):
-        mssv = self.mssv.get().strip()
-        ho = self.ho.get().strip()
-        ten = self.ten.get().strip()
+    # def insert_data_button(self):
+    #     mssv = self.mssv.get().strip()
+    #     ho = self.ho.get().strip()
+    #     ten = self.ten.get().strip()
 
-        if self.check_exsit(self.mssv.get()):
-            self.insert_data()
-            self.add_table(mssv, ho, ten)
-            self.clear_inputs()
-            self.load_data()
-        else:
-            messagebox.showerror("Error", "Mã sinh viên không tồn tại")
+    #     if self.check_exsit(self.mssv.get()):
+    #         self.insert_data(mssv,ho,ten)
+    #         self.add_table(mssv, ho, ten)
+    #         self.clear_inputs()
+    #         self.load_data_tabletree()
+    #     else:
+    #         messagebox.showerror("Error", "Mã sinh viên không tồn tại")
 
     def add_data_button(self):
         """Thêm sinh viên mới vào cơ sở dữ liệu và bảng Treeview"""
@@ -198,33 +202,43 @@ class TableApp():
             if self.check_exist(mssv):
                 messagebox.showerror("Error", "Mã sinh viên đã tồn tại")
             else:
-                self.insert_data()
-                self.add_table(mssv, ho, ten)
-                self.clear_inputs()
-                self.load_data()
+                if self.insert_data(mssv,ho,ten) :
+                    self.add_table(mssv, ho, ten)
+                    self.clear_inputs()
+                    self.load_data_tabletree()
+                else :
+                    messagebox.showerror("Error", "Lỗi")
 
     def update_data_button(self):
         mssv = self.mssv.get().strip()
+        ho = self.ho.get().strip()
+        ten = self.ten.get().strip()
+        
         if self.check_exist(mssv):
-            self.update_data()
-            self.clear_inputs()
-            self.load_data()
+            result = self.update_data(mssv, ho, ten)  # Lấy cả result và error
+            if result:
+                self.clear_inputs()
+                self.load_data_tabletree()
+            else:
+                # Hiển thị thông báo lỗi nếu có vấn đề xảy ra và hiển thị thông tin lỗi từ biến 'error'
+                messagebox.showerror("Error", f"Đã xảy ra lỗi khi cập nhật dữ liệu")
         else:
             messagebox.showerror("Error", "Mã sinh viên không tồn tại")
 
     def delete_data_button(self):
         mssv = self.mssv.get().strip()
         if self.check_exist(mssv):
-            self.delete_data(mssv)
-            self.clear_inputs()
-            messagebox.showinfo("Done", "Đã xóa thành công   ")
-            self.load_data()
+            result = self.delete_data(mssv)
+            if result :
+                self.clear_inputs()
+                messagebox.showinfo("Done", "Đã xóa thành công   ")
+                self.load_data_tabletree()
 
         else:
             messagebox.showerror("Error", "Mã sinh viên không tồn tại")
 
     def load_data_button(self):
-        if self.load_data():
+        if self.check_load_data():
             messagebox.showinfo("Success", "Load data done")
 
     def validate_input(self, mssv, ho, ten):
@@ -246,72 +260,18 @@ class TableApp():
         self.ho.set("")
         self.ten.set("")
 
-    # ! Còn Return True False
-    def connect_db(self):
-        """Kết nối tới cơ sở dữ liệu PostgreSQL"""
-        try:
-            self.conn = psycopg2.connect(
-                dbname=self.db_name.get(),
-                user=self.user.get(),
-                password=self.password.get(),
-                host=self.host.get(),
-                port=self.port.get()
-            )
-            self.cur = self.conn.cursor()
-            messagebox.showinfo(
-                "Success", "Connected to the database successfully!")
-            return True
-        except Exception as e:
-            messagebox.showerror(
-                "Error", f"Error connecting to the database: {e}")
-            return False
-
-    def insert_data_tabletree(self, rows):
-        # Dấu * là giải nén tuple thành các phần tử riêng lẻ
-        # Xóa toàn bộ dữ liệu hiện tại
-        self.data_table.delete(*self.data_table.get_children())
-        for row in rows:
-            # các hàng được chèn không có quan hệ cha-con
-            self.data_table.insert("", tk.END, values=row)
-
-    def load_data(self):
-        """Tải dữ liệu từ cơ sở dữ liệu và hiển thị trong bảng Treeview"""
-        try:
-            query = sql.SQL(
-                "SELECT * FROM {}").format(sql.Identifier(self.table_name.get()))
-            self.cur.execute(query)
-            rows = self.cur.fetchall()
-            self.insert_data_tabletree(rows)
-            return True
-        except Exception as e:
-            self.conn.rollback()
-            messagebox.showerror("Error", f"Error loading data: {e}")
-            return False
-
-    def insert_data(self):
-        """Chèn dữ liệu sinh viên vào cơ sở dữ liệu"""
-        try:
-            insert_query = sql.SQL("INSERT INTO {} (mssv, ho,ten) VALUES (%s, %s,%s)").format(
-                sql.Identifier(self.table_name.get()))
-            data_to_insert = (self.mssv.get(), self.ho.get(), self.ten.get())
-            self.cur.execute(insert_query, data_to_insert)
-            self.conn.commit()
-            messagebox.showinfo("Success", "Data inserted successfully!")
-        except Exception as e:
-            self.conn.rollback()
-            messagebox.showerror("Error", f"Error inserting data: {e}")
-
-    def update_data(self):
-        try:
-            update_query = sql.SQL("UPDATE {} SET ho = %s, ten = %s WHERE mssv = %s").format(
-                sql.Identifier(self.table_name.get()))
-            data_to_update = (self.ho.get(), self.ten.get(), self.mssv.get())
-            self.cur.execute(update_query, data_to_update)
-            self.conn.commit()
-            messagebox.showinfo("Success", "Data update successfully!")
-        except Exception as e:
-            self.conn.rollback()
-            messagebox.showerror("Error", f"Error inserting data: {e}")
+    
+    def load_data_tabletree(self):
+        result = self.load_data()  # Gọi load_data và lưu kết quả
+        if result:  # Nếu result không phải False
+            rows = result  # Gán rows là kết quả trả về của load_data
+            self.data_table.delete(*self.data_table.get_children())  # Xóa dữ liệu cũ
+            for row in rows:
+                self.data_table.insert("", tk.END, values=row)  # Chèn dữ liệu vào bảng
+            messagebox.showinfo("Done", "Dữ liệu đã được tải thành công")
+        else:
+            messagebox.showerror("Error", "Không thể tải dữ liệu từ cơ sở dữ liệu")
+        
 
     def delete_selected_row(self):
         """Xóa hàng đang được chọn trong Treeview"""
@@ -320,17 +280,19 @@ class TableApp():
             selected_items = self.data_table.selection()
             if not selected_items:
                 messagebox.showwarning("Lỗi", "Vui lòng chọn hàng để xóa.")
-                return
+                
 
             for item in selected_items:
                 values = self.data_table.item(item, 'values')
                 mssv = values[0]
-                self.delete_data(mssv)
-                if item in self.data_table.get_children():
-                    self.data_table.delete(item)
-                else:
-                    messagebox.showwarning(
-                        "Lỗi", f"Item {item} không tồn tại trong bảng.")
+                result= self.delete_data(mssv)
+                if result :
+                    if item in self.data_table.get_children():
+                        self.data_table.delete(item)
+                    else:
+                        messagebox.showwarning(
+                            "Lỗi", f"Item {item} không tồn tại trong bảng.")
+
             self.clear_inputs()
             messagebox.showinfo("Thành công", "Đã xóa hàng thành công.")
         except Exception as e:
@@ -339,30 +301,25 @@ class TableApp():
     def delete_data_input(self):
         try:
             self.delete_data(self.mssv.get())
-            self.load_data()
+            self.load_data_tabletree()
             self.clear_inputs()
             messagebox.showinfo("Success", "Đã xóa thành công")
         except Exception as e:
             messagebox.showerror("Error", f"{e}")
 
-    def delete_data(self, mssv):
-        """Xóa dữ liệu sinh viên khỏi cơ sở dữ liệu theo MSSV"""
-        try:
-            delete_query = sql.SQL("DELETE FROM {} WHERE mssv = %s").format(
-                sql.Identifier(self.table_name.get()))
-            self.cur.execute(delete_query, (mssv,))
-            self.conn.commit()
-        except Exception as e:
-            self.conn.rollback()
-            messagebox.showerror(
-                "Error", f"Error deleting data from database: {e}")
+  
 
     def connect_to_manage(self):
-        check = self.connect_db()
-        if check:
+        result = self.connect_db()
+        if result is True:
+            # Kết nối thành công
+            # print("Kết nối cơ sở dữ liệu thành công!")
             self.connection_frame.pack_forget()
             self.widgets_manage()
-
+        else:
+            # Kết nối thất bại, xử lý lỗi
+            result, error = result
+            print(f"Không thể kết nối: {error}")
     def msg_box_info(self):
         messagebox.showinfo(
             "About", "This is a GUI made by Hieu Tran version 1.0\n Release in 10/13/2024\n")
@@ -404,9 +361,23 @@ class TableApp():
 
         except Exception as e:
             messagebox.showwarning("Warning", f"Có lỗi xảy ra: {str(e)}")
+            
+    def check_load_data(self):
+        result = self.load_data()
+        if result is False:
+            messagebox.showerror("Error", "Không thể load dữ liệu")
+            return False
+        else : 
+            return True
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    TableApp(root)
+    db_name ="quanlysinhvien"
+    user ="postgres"
+    password ="123456"
+    host ="localhost"
+    port ="5432"
+    table_name ="sinhvien"
+    TableApp(root,db_name, user, password, host, port,table_name)
     root.mainloop()
