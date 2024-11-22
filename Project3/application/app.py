@@ -1,124 +1,113 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-from database import *
+from flask import Flask, render_template, request, redirect, session, flash
+from flask_bootstrap import Bootstrap
+from model import Database  
+import os
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+Bootstrap(app)
+app.secret_key = "AFCAHNF&A*@435"  # For session management
 
-# Các thông tin cơ sở dữ liệu
-db_name = 'dbbooks'
-user = 'postgres'
-password = '123456'
-host = 'localhost'
-port = '5432'
-table_name = 'books'
-users_table = 'users'
+# Configure database connection
 
-# Route Trang Chủ (Hiển thị sách)
-@app.route('/')
+db = Database("quanlysinhvien", "postgres", "123456", "localhost", "5432", "sinhvien")
+db.connect_db()
+
+# Routes
+@app.route("/")
 def index():
-    conn = connect_db(db_name, user, password, host, port)
-    if conn:
-        books = get_data(conn, table_name)
-        conn.close()
-        return render_template('index.html', books=books)
-    else:
-        flash("Không thể kết nối đến cơ sở dữ liệu.")
-        return render_template('index.html', books=[])
+    if "username" in session:
+        return redirect("/students")
+    return redirect("/login")
 
-# Route Đăng Nhập
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        conn = connect_db(db_name, user, password, host, port)
-        if conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
-            user_data = cursor.fetchone()
-            cursor.close()
-            conn.close()
-
-            if user_data:
-                session['username'] = username
-                flash('Đăng nhập thành công!')
-                return redirect(url_for('index'))
-            else:
-                flash('Thông tin đăng nhập không hợp lệ, vui lòng thử lại.',"error")
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        # if db.validate_user(username, password):
+        #     session["username"] = username
+        #     return redirect("/students")
+        # else:
+        #     flash("Invalid username or password", "danger")
+        if username == "postgres" and password =="123456":
+            session["username"] = username
+            return redirect("/students")
         else:
-            flash('Không thể kết nối đến cơ sở dữ liệu.')
-    
-    return render_template('login.html')
+            flash("Invalid username or password", "danger")
+    return render_template("login.html")
 
-# Route Đăng Xuất
-@app.route('/logout')
+@app.route("/logout")
 def logout():
-    session.pop('username', None)
-    flash('Bạn đã đăng xuất.')
-    return redirect(url_for('index'))
+    session.pop("username", None)
+    return redirect("/login")
 
-# Route Thêm Sách
-@app.route('/add_book', methods=['GET', 'POST'])
-def add_book():
-    if request.method == 'POST':
-        masach = request.form['masach']
-        tensach = request.form['tensach']
-        mota = request.form['mota']
-        ngayxuatban = request.form['ngayxuatban']
-        conn = connect_db(db_name, user, password, host, port)
-        if conn:
-            insert_data(conn, table_name, (masach, tensach, mota, ngayxuatban))
-            flash('Sách đã được thêm thành công!')
-            conn.close()
-            return redirect(url_for('index'))
+@app.route("/students", methods=["GET", "POST"])
+def students():
+    if "username" not in session:
+        return redirect("/login")
+    if request.method == "POST":
+        mssv = request.form.get("mssv")
+        ho = request.form.get("ho")
+        ten = request.form.get("ten")
+        image = request.files["image"]
+        image_path = os.path.join("uploads", image.filename)
+        image.save(image_path)
+        if db.insert_data(mssv, ho, ten, image_path):
+            flash("Student added successfully", "success")
         else:
-            flash('Không thể kết nối đến cơ sở dữ liệu.')
-    return render_template('add_book.html')
+            flash("Error adding student", "danger")
+    students = db.load_data()
+    return render_template("students.html", students=students)
 
-# Route Sửa Sách
-@app.route('/edit_book/<string:book_id>', methods=['GET', 'POST'])
-def edit_book(book_id):
-    conn = connect_db(db_name, user, password, host, port)
-    if request.method == 'POST':
-        masach = request.form['masach']
-        tensach = request.form['tensach']
-        mota = request.form['mota']
-        ngayxuatban = request.form['ngayxuatban']
-
-        if conn:
-            update_data(conn, table_name, (masach, tensach, mota, ngayxuatban, book_id))
-            flash('Sách đã được cập nhật thành công!')
-            conn.close()
-            return redirect(url_for('index'))
+@app.route("/add_student", methods=["GET", "POST"])
+def add_student():
+    if "username" not in session:
+        return redirect("/login")
+    if request.method == "POST":
+        mssv = request.form.get("mssv")
+        ho = request.form.get("ho")
+        ten = request.form.get("ten")
+        image = request.files["image"]
+        image_path = os.path.join("uploads", image.filename)
+        image.save(image_path)
+        if db.insert_data(mssv, ho, ten, image_path):
+            flash("Student added successfully", "success")
         else:
-            flash('Không thể kết nối đến cơ sở dữ liệu.')
-    
-    if conn:
-        cursor = conn.cursor()
-        cursor.execute(f"SELECT masach, tensach, mota, ngayxuatban FROM {table_name} WHERE masach=%s", (book_id,))
-        book = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        return render_template('edit_book.html', book=book)
+            flash("Error adding student", "danger")
+        return redirect("/students")
+    return render_template("add_student.html")
+
+@app.route("/edit_student/<string:mssv>", methods=["GET", "POST"])
+def edit_student(mssv):
+    if "username" not in session:
+        return redirect("/login")
+    if request.method == "POST":
+        ho = request.form.get("ho")
+        ten = request.form.get("ten")
+        image = request.files.get("image")
+        image_path = None
+        if image:
+            image_path = os.path.join("uploads", image.filename)
+            image.save(image_path)
+        if db.update_data(mssv, ho, ten, image_path):
+            flash("Student updated successfully", "success")
+        else:
+            flash("Error updating student", "danger")
+        return redirect("/students")
+    student = db.get_student_by_mssv(mssv)  # Retrieve student details
+    return render_template("edit_student.html", student=student)
+
+@app.route("/delete_student/<string:mssv>")
+def delete_student(mssv):
+    if "username" not in session:
+        return redirect("/login")
+    if db.delete_data(mssv):
+        flash("Student deleted successfully", "success")
     else:
-        flash('Không thể kết nối đến cơ sở dữ liệu.')
-        return redirect(url_for('index'))
+        flash("Error deleting student", "danger")
+    return redirect("/students")
 
-# Route Xóa Sách
-@app.route('/delete_book/<string:book_id>', methods=['POST'])
-def delete_book(book_id):
-    conn = connect_db(db_name, user, password, host, port)
-    if conn:
-        delete_data(conn, table_name, book_id)
-        flash('Sách đã được xóa thành công!')
-        conn.close()
-    else:
-        flash('Không thể kết nối đến cơ sở dữ liệu.')
-
-    return redirect(url_for('index'))
-
-
-# Đảm bảo ứng dụng Flask chạy
 if __name__ == "__main__":
-    app.run(debug=True,port=8080)
+    if not os.path.exists("/uploads"):
+        os.mkdir("/uploads")
+    app.run(debug=True,port=5050)
