@@ -7,15 +7,14 @@ app = Flask(__name__)
 Bootstrap(app)
 app.secret_key = "AFCAHNF&A*@435"  # For session management
 
-# Configure database connection
 
-db = Database("quanlysinhvien", "postgres", "123456", "localhost", "5432", "sinhvien")
-db.connect_db()
 
 # Routes
 @app.route("/")
 def index():
     if "username" in session:
+        db = Database(db_name, user, password, host, port, table_name)
+        db.connect_db()
         return redirect("/students")
     return redirect("/login")
 
@@ -107,7 +106,23 @@ def delete_student(mssv):
         flash("Error deleting student", "danger")
     return redirect("/students")
 
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template("/error/404.html"),404
+    
 if __name__ == "__main__":
     if not os.path.exists("/uploads"):
         os.mkdir("/uploads")
+        
+    # Configure database connection
+    db_name = "quanlysinhvien"
+    user = "postgres"
+    password = "123456"
+    host = "localhost"
+    port = "5432"
+    table_name = "sinhvien"
+    db = Database(db_name, user, password, host, port, table_name)
+    db.connect_db()
     app.run(debug=True,port=5050)
