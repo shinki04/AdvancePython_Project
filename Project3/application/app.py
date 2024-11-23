@@ -44,17 +44,17 @@ def logout():
 def students():
     if "username" not in session:
         return redirect("/login")
-    if request.method == "POST":
-        mssv = request.form.get("mssv")
-        ho = request.form.get("ho")
-        ten = request.form.get("ten")
-        image = request.files["image"]
-        image_path = os.path.join("uploads", image.filename)
-        image.save(image_path)
-        if db.insert_data(mssv, ho, ten, image_path):
-            flash("Student added successfully", "success")
-        else:
-            flash("Error adding student", "danger")
+    # if request.method == "POST":
+    #     mssv = request.form.get("mssv")
+    #     ho = request.form.get("ho")
+    #     ten = request.form.get("ten")
+    #     image = request.files["image"]
+    #     image_path = os.path.join("uploads", image.filename)
+    #     image.save(image_path)
+    #     if db.insert_data(mssv, ho, ten, image_path):
+    #         flash("Student added successfully", "success")
+    #     else:
+    #         flash("Error adding student", "danger")
     students = db.load_data()
     return render_template("students.html", students=students)
 
