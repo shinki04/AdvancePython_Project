@@ -117,12 +117,14 @@ if __name__ == "__main__":
         os.mkdir("/uploads")
         
     # Configure database connection
-    db_name = "quanlysinhvien"
-    user = "postgres"
-    password = "123456"
-    host = "localhost"
-    port = "5432"
-    table_name = "sinhvien"
-    db = Database(db_name, user, password, host, port, table_name)
+    # db_name = "quanlysinhvien"
+    # user = "postgres"
+    # password = "123456"
+    # host = "localhost"
+    # port = "5432"
+    # table_name = "sinhvien"
+    # db = Database(db_name, user, password, host, port, table_name)
+    db = Database(table_name='quanlysinhvien')
+
     db.connect_db()
     app.run(debug=True,port=5050)

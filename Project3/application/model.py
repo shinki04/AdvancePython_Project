@@ -1,14 +1,28 @@
 import psycopg2
 from psycopg2 import sql
 import base64 
+import os
+
 class Database:
     def __init__(self, db_name, user, password, host, port, table_name):
-        self.db_name = db_name
-        self.user = user
-        self.password = password
-        self.host = host
-        self.port = port
+        # self.db_name = db_name
+        # self.user = user
+        # self.password = password
+        # self.host = host
+        # self.port = port
+        # self.table_name = table_name
+        
+        self.db_url = os.getenv('DATABASE_URL')  # Lấy URL từ biến môi trường
         self.table_name = table_name
+
+    def connect_db(self):
+        try:
+            self.conn = psycopg2.connect(self.db_url)
+            self.cur = self.conn.cursor()
+            return True
+        except Exception as e:
+            print(f"Connection error: {e}")
+            return False
 
     def connect_db(self):
         try:
