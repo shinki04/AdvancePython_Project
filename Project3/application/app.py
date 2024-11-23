@@ -13,7 +13,7 @@ app.secret_key = "AFCAHNF&A*@435"  # For session management
 @app.route("/")
 def index():
     if "username" in session:
-        db = Database(db_name, user, password, host, port, table_name)
+        # db = Database(db_name, user, password, host, port, table_name)
         db.connect_db()
         return redirect("/students")
     return redirect("/login")
